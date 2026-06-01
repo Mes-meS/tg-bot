@@ -8,7 +8,7 @@ ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 
 # Ваши паки (оставляем как есть)
 PAKS = {
-    "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 350),
+    "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 250),
     "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 100),
 }
 
