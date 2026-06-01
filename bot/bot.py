@@ -8,9 +8,10 @@ ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 
 # Ваши паки
 PAKS = {
-    "pak1": ("marin(472)", "https://t.me/+RMz0-kELEhMzZGRi", 250),
-    "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
+    "pak1": ("Marin(472)", "https://t.me/+RMz0-kELEhMzZGRi", 250),
+    "pak2": ("Haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
     "pak3": ("Mem_cho", "vgzdhhb", 50),
+    "pak3": ("Yanami_Anna(108)", "https://github.com/?ysclid=mpvrpb2ttj936509733", 50),
 }
 
 pending = {}
