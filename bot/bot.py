@@ -13,7 +13,7 @@ PAKS = {
 }
 
 pending = {}
-
+user_purchases = {}  # {user_id: [{"name": "pak1", "link": "url"}, ...]}
 async def start(update: Update, context):
     keyboard = []
     for pak_id, (name, link, price) in PAKS.items():
@@ -93,6 +93,12 @@ async def admin_approve(update: Update, context):
     menu_keyboard = InlineKeyboardMarkup([[
         InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")
     ]])
+        InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")
+    ]])
+        # Сохраняем покупку
+    if user_id not in user_purchases:
+        user_purchases[user_id] = []
+    user_purchases[user_id].append({"name": name, "link": link})
     
     await context.bot.send_message(
         user_id,
@@ -132,14 +138,36 @@ async def back_to_menu(update: Update, context):
         "🏠 Добро пожаловать в магазин паков!\n\nВыбери пак для покупки:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
+async def my_purchases(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    
+    if user_id not in user_purchases or not user_purchases[user_id]:
+        await query.edit_message_text("❌ У вас пока нет покупок")
+        return
+    
+    text = "📦 ВАШИ ПОКУПКИ:\n\n"
+    for pak in user_purchases[user_id]:
+        text += f"🔹 {pak['name']}\n🔗 {pak['link']}\n\n"
+    
+    keyboard = [[InlineKeyboardButton("🔙 В меню", callback_data="back_to_menu")]]
+    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
+async def back_to_menu(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+    keyboard = [[InlineKeyboardButton("🛍️ Купить пак", callback_data="pak1")]]  # Или свои кнопки
+    await query.edit_message_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
+    
 def main():
     app = Application.builder().token(TOKEN).build()
     
     # Добавляем обработчики команд
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("menu", menu))
-    
+    app.add_handler(CallbackQueryHandler(my_purchases, pattern="^my_purchases$"))
+    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
     # Добавляем обработчики callback-кнопок
     app.add_handler(CallbackQueryHandler(buy, pattern="^(pak1|pak2)$"))
     app.add_handler(CallbackQueryHandler(paid, pattern="^paid$"))
