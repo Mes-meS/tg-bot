@@ -116,8 +116,7 @@ if not already_bought:
         disable_web_page_preview=True,
         reply_markup=menu_keyboard
     )
-    
-await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
+    await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
 async def admin_deny(update: Update, context):
     
     query = update.callback_query
