@@ -37,6 +37,7 @@ async def buy(update: Update, context):
     query = update.callback_query
     await query.answer()
     pak_id = query.data
+    "buy_"
     name, link, price = PAKS[pak_id]
     pending[query.from_user.id] = pak_id
     keyboard = [[InlineKeyboardButton("✅ Я оплатил", callback_data="paid")]]
@@ -94,9 +95,19 @@ async def admin_approve(update: Update, context):
         [InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")],
         [InlineKeyboardButton("🛍️ Мои покупки", callback_data="my_purchases")]
     ])
-        # Сохраняем покупку
-    if user_id not in user_purchases:
-        user_purchases[user_id] = []
+    
+    # Сохраняем покупку (без дублей)
+if user_id not in user_purchases:
+    user_purchases[user_id] = []
+
+# Проверяем, есть ли уже такой пак
+already_bought = False
+for pak in user_purchases[user_id]:
+    if pak['name'] == name:
+        already_bought = True
+        break
+
+if not already_bought:
     user_purchases[user_id].append({"name": name, "link": link})
     
     await context.bot.send_message(
@@ -158,6 +169,20 @@ async def back_to_menu(update: Update, context):
     await query.answer()
     keyboard = [[InlineKeyboardButton("🛍️ Купить пак", callback_data="pak1")]]  # Или свои кнопки
     await query.edit_message_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
+async def show_products(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+    
+    keyboard = []
+    for pak_id, (name, link, price) in PAKS.items():
+        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=f"buy_{pak_id}")])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")])
+    
+    await query.edit_message_text(
+        "🛍️ Выбери пак для покупки:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )    
     
 def main():
     app = Application.builder().token(TOKEN).build()
@@ -168,7 +193,8 @@ def main():
     app.add_handler(CallbackQueryHandler(my_purchases, pattern="^my_purchases$"))
     app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
     # Добавляем обработчики callback-кнопок
-    app.add_handler(CallbackQueryHandler(buy, pattern="^(pak1|pak2)$"))
+    app.add_handler(CallbackQueryHandler(show_products, pattern="^show_products$"))
+    app.add_handler(CallbackQueryHandler(buy, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(paid, pattern="^paid$"))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
     app.add_handler(CallbackQueryHandler(admin_deny, pattern="^deny_"))
