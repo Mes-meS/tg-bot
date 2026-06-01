@@ -105,7 +105,7 @@ async def buy(update: Update, context):
     )
 
 async def paid(update: Update, context):
-query = update.callback_query
+    query = update.callback_query
     await query.answer()
     
     user_id = query.from_user.id
