@@ -110,14 +110,14 @@ for pak in user_purchases[user_id]:
 if not already_bought:
     user_purchases[user_id].append({"name": name, "link": link})
     
-await context.bot.send_message(
+    await context.bot.send_message(
         user_id,
         f"✅ ОПЛАТА ПОДТВЕРЖДЕНА!\n\n📦 Товар: {name}\n🔗 Ссылка: {link}\n\nСпасибо за покупку!",
         disable_web_page_preview=True,
         reply_markup=menu_keyboard
     )
     
-    await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
+await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
 async def admin_deny(update: Update, context):
     
     query = update.callback_query
