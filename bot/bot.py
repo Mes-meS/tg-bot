@@ -83,8 +83,8 @@ async def admin_approve(update: Update, context):
     user_id = int(user_id_str)
     name, link, price = PAKS[pak_id]
 
-    menu_keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")
+    main_keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_main")
     ]])
     
     await context.bot.send_message(
@@ -109,7 +109,7 @@ async def admin_deny(update: Update, context):
     
     await query.edit_message_text(f"❌ ОТКАЗАНО пользователю {user_id}")
     
-async def back_to_menu(update: Update, context):
+async def back_to_main(update: Update, context):
     query = update.callback_query
     await query.answer()
     
@@ -132,7 +132,7 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
     app.add_handler(CallbackQueryHandler(admin_deny, pattern="^deny_"))
-    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
+    app.add_handler(CallbackQueryHandler(back_to_main, pattern="^back_to_main$"))
     print("✅ Бот запущен!")
     app.run_polling()
 
