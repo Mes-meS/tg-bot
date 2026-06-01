@@ -102,7 +102,7 @@ async def admin_approve(update: Update, context):
     )
     
     await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
-    async def admin_deny(update: Update, context):
+async def admin_deny(update: Update, context):
     query = update.callback_query
     await query.answer()
     
