@@ -10,7 +10,7 @@ ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 PAKS = {
     "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 250),
     "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
-    "pak3": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
+    "pak3": ("yanami_anna", "https://t.me/+QgREEpJi0t1jZDVi", 100),
 }
 
 pending = {}
