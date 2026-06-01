@@ -2,45 +2,101 @@ import os
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import Application, CommandHandler, CallbackQueryHandler, MessageHandler, filters
 
-# Берём токен из переменных окружения (их укажете в панели)
+# Берём токен из переменных окружения
 TOKEN = os.environ.get('BOT_TOKEN')
 ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 
-# Ваши паки (оставляем как есть)
+# Ваши паки
 PAKS = {
     "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 350),
     "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 100),
 }
 
 pending = {}
-user_purchases = {}  # {user_id: [{"name": "pak1", "link": "url"}, ...]}
+user_purchases = {}  # Хранилище покупок пользователей
+
 async def start(update: Update, context):
-    keyboard = []
-    for pak_id, (name, link, price) in PAKS.items():
-        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=pak_id)])
+    keyboard = [
+        [InlineKeyboardButton("🛍️ Купить пак", callback_data="show_products")],
+        [InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")]
+    ]
     await update.message.reply_text(
-        "Добро пожаловать в магазин паков!\n\nВыбери пак для покупки:",
+        "Добро пожаловать в магазин паков!\n\nВыберите действие:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-async def menu(update: Update, context):
-    """Команда /menu - показывает меню с товарами"""
+async def show_products(update: Update, context):
+    """Показывает список доступных товаров"""
+    query = update.callback_query
+    await query.answer()
+    
     keyboard = []
     for pak_id, (name, link, price) in PAKS.items():
-        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=pak_id)])
-    await update.message.reply_text(
-        "🏠 Меню магазина:\n\nВыбери пак для покупки:",
+        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=f"buy_{pak_id}")])
+    
+    keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="back_to_main")])
+    
+    await query.edit_message_text(
+        "🛍️ Выберите пак для покупки:",
         reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+async def my_purchases(update: Update, context):
+    """Показывает купленные паки пользователя"""
+    query = update.callback_query
+    await query.answer()
+    
+    user_id = query.from_user.id
+    
+    if user_id not in user_purchases or not user_purchases[user_id]:
+        keyboard = [[InlineKeyboardButton("🛍️ Купить пак", callback_data="show_products")]]
+        await query.edit_message_text(
+            "❌ У вас пока нет купленных паков.",
+            reply_markup=InlineKeyboardMarkup(keyboard)
+        )
+        return
+    
+    text = "📦 ВАШИ ПОКУПКИ:\n\n"
+    keyboard = []
+    
+    for pak in user_purchases[user_id]:
+        text += f"🔹 {pak['name']}\n🔗 {pak['link']}\n\n"
+        keyboard.append([InlineKeyboardButton(f"📎 {pak['name']}", url=pak['link'])])
+    
+    keyboard.append([InlineKeyboardButton("🔙 В главное меню", callback_data="back_to_main")])
+    
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard),
+        disable_web_page_preview=True
     )
 
 async def buy(update: Update, context):
     query = update.callback_query
     await query.answer()
-    pak_id = query.data
-    "buy_"
+    
+    pak_id = query.data.replace("buy_", "")
     name, link, price = PAKS[pak_id]
-    pending[query.from_user.id] = pak_id
-    keyboard = [[InlineKeyboardButton("✅ Я оплатил", callback_data="paid")]]
+    
+    # Проверяем, не куплен ли уже этот пак
+    user_id = query.from_user.id
+    if user_id in user_purchases:
+        for pak in user_purchases[user_id]:
+            if pak['name'] == name:
+                keyboard = [[InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")]]
+                await query.edit_message_text(
+                    f"❌ Вы уже покупали пак {name}!\n\nСсылка есть в разделе «Мои покупки».",
+                    reply_markup=InlineKeyboardMarkup(keyboard)
+                )
+                return
+    
+    pending[user_id] = pak_id
+    
+    keyboard = [
+        [InlineKeyboardButton("✅ Я оплатил", callback_data="paid")],
+        [InlineKeyboardButton("🔙 Назад", callback_data="show_products")]
+    ]
+    
     await query.edit_message_text(
         f"💎 {name}\n💰 Цена: {price}₽\n\n"
         f"📌 Реквизиты:\nСбер: -\n\n"
@@ -49,18 +105,21 @@ async def buy(update: Update, context):
     )
 
 async def paid(update: Update, context):
-    query = update.callback_query
+query = update.callback_query
     await query.answer()
+    
     user_id = query.from_user.id
+    
     if user_id not in pending:
-        await query.edit_message_text("❌ Сначала выбери товар через /start")
+        await query.edit_message_text("❌ Сначала выберите товар через меню")
         return
-    await query.edit_message_text("📸 Отправь фото чека в этот чат")
+    
+    await query.edit_message_text("📸 Отправьте фото чека в этот чат")
     context.user_data['waiting'] = pending[user_id]
 
 async def handle_photo(update: Update, context):
     if 'waiting' not in context.user_data:
-        await update.message.reply_text("❌ Сначала выбери товар через /start")
+        await update.message.reply_text("❌ Сначала выберите товар через меню")
         return
     
     user_id = update.message.from_user.id
@@ -79,7 +138,7 @@ async def handle_photo(update: Update, context):
         reply_markup=keyboard
     )
     
-    await update.message.reply_text("✅ Чек отправлен администратору. Ожидай ответа.")
+    await update.message.reply_text("✅ Чек отправлен администратору. Ожидайте ответа.")
     del context.user_data['waiting']
 
 async def admin_approve(update: Update, context):
@@ -90,25 +149,24 @@ async def admin_approve(update: Update, context):
     user_id = int(user_id_str)
     name, link, price = PAKS[pak_id]
     
-    # Создаём кнопку "Вернуться в меню"
-    menu_keyboard = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")],
-        [InlineKeyboardButton("🛍️ Мои покупки", callback_data="my_purchases")]
-    ])
+    # Создаём кнопки
+    menu_keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_main"),
+        InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")
+    ]])
     
     # Сохраняем покупку (без дублей)
-if user_id not in user_purchases:
-    user_purchases[user_id] = []
-
-# Проверяем, есть ли уже такой пак
-already_bought = False
-for pak in user_purchases[user_id]:
-    if pak['name'] == name:
-        already_bought = True
-        break
-
-if not already_bought:
-    user_purchases[user_id].append({"name": name, "link": link})
+    if user_id not in user_purchases:
+        user_purchases[user_id] = []
+    
+    already_bought = False
+    for pak in user_purchases[user_id]:
+        if pak['name'] == name:
+            already_bought = True
+            break
+    
+    if not already_bought:
+        user_purchases[user_id].append({"name": name, "link": link})
     
     await context.bot.send_message(
         user_id,
@@ -117,10 +175,9 @@ if not already_bought:
         reply_markup=menu_keyboard
     )
     
-await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
+    await query.edit_message_text(f"✅ ВЫДАНО пользователю {user_id}\nТовар: {name}")
 
 async def admin_deny(update: Update, context):
-    
     query = update.callback_query
     await query.answer()
     
@@ -134,78 +191,41 @@ async def admin_deny(update: Update, context):
     
     await query.edit_message_text(f"❌ ОТКАЗАНО пользователю {user_id}")
 
-async def back_to_menu(update: Update, context):
-    """Кнопка возврата в меню"""
+async def back_to_main(update: Update, context):
+    """Возвращает в главное меню"""
     query = update.callback_query
     await query.answer()
     
-    # Создаём клавиатуру с товарами
-    keyboard = []
-    for pak_id, (name, link, price) in PAKS.items():
-        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=pak_id)])
+    keyboard = [
+        [InlineKeyboardButton("🛍️ Купить пак", callback_data="show_products")],
+        [InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")]
+    ]
     
-    # Отправляем сообщение с меню
     await query.edit_message_text(
-        "🏠 Добро пожаловать в магазин паков!\n\nВыбери пак для покупки:",
+        "🏠 Главное меню:\n\nВыберите действие:",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
-async def my_purchases(update: Update, context):
-    query = update.callback_query
-    await query.answer()
-    user_id = query.from_user.id
-    
-    if user_id not in user_purchases or not user_purchases[user_id]:
-        await query.edit_message_text("❌ У вас пока нет покупок")
-        return
-    
-    text = "📦 ВАШИ ПОКУПКИ:\n\n"
-    for pak in user_purchases[user_id]:
-        text += f"🔹 {pak['name']}\n🔗 {pak['link']}\n\n"
-    
-    keyboard = [[InlineKeyboardButton("🔙 В меню", callback_data="back_to_menu")]]
-    await query.edit_message_text(text, reply_markup=InlineKeyboardMarkup(keyboard))
 
-async def back_to_menu(update: Update, context):
-    query = update.callback_query
-    await query.answer()
-    keyboard = [[InlineKeyboardButton("🛍️ Купить пак", callback_data="pak1")]]  # Или свои кнопки
-    await query.edit_message_text("Выберите действие:", reply_markup=InlineKeyboardMarkup(keyboard))
-async def show_products(update: Update, context):
-    query = update.callback_query
-    await query.answer()
-    
-    keyboard = []
-    for pak_id, (name, link, price) in PAKS.items():
-        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=f"buy_{pak_id}")])
-    
-    keyboard.append([InlineKeyboardButton("🔙 Назад", callback_data="back_to_menu")])
-    
-    await query.edit_message_text(
-        "🛍️ Выбери пак для покупки:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
-    )    
-    
 def main():
     app = Application.builder().token(TOKEN).build()
     
-    # Добавляем обработчики команд
+    # Команды
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("menu", menu))
-    app.add_handler(CallbackQueryHandler(my_purchases, pattern="^my_purchases$"))
-    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
-    # Добавляем обработчики callback-кнопок
+    
+    # Callback-обработчики
     app.add_handler(CallbackQueryHandler(show_products, pattern="^show_products$"))
+    app.add_handler(CallbackQueryHandler(my_purchases, pattern="^my_purchases$"))
     app.add_handler(CallbackQueryHandler(buy, pattern="^buy_"))
     app.add_handler(CallbackQueryHandler(paid, pattern="^paid$"))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
     app.add_handler(CallbackQueryHandler(admin_deny, pattern="^deny_"))
-    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
+    app.add_handler(CallbackQueryHandler(back_to_main, pattern="^back_to_main$"))
     
-    # Добавляем обработчик фото
+    # Обработчик фото
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     
     print("✅ Бот запущен!")
     app.run_polling()
 
-if __name__ == "__main__":
+if name == "main":
     main()
