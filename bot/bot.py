@@ -82,6 +82,10 @@ async def admin_approve(update: Update, context):
     _, user_id_str, pak_id = query.data.split("_")
     user_id = int(user_id_str)
     name, link, price = PAKS[pak_id]
+
+    menu_keyboard = InlineKeyboardMarkup([[
+        InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")
+    ]])
     
     await context.bot.send_message(
         user_id,
@@ -104,7 +108,20 @@ async def admin_deny(update: Update, context):
     )
     
     await query.edit_message_text(f"❌ ОТКАЗАНО пользователю {user_id}")
-
+async def back_to_menu(update: Update, context):
+    query = update.callback_query
+    await query.answer()
+    
+    # Создаём клавиатуру с товарами (как в /start)
+    keyboard = []
+    for pak_id, (name, link, price) in PAKS.items():
+        keyboard.append([InlineKeyboardButton(f"{name} - {price}₽", callback_data=pak_id)])
+    
+    # Отправляем сообщение с меню
+    await query.edit_message_text(
+        "🏠 Добро пожаловать в магазин паков!\n\nВыбери пак для покупки:",
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
 def main():
     app = Application.builder().token(TOKEN).build()
     
@@ -114,7 +131,7 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
     app.add_handler(CallbackQueryHandler(admin_deny, pattern="^deny_"))
-    
+    app.add_handler(CommandHandler("menu", menu))
     print("✅ Бот запущен!")
     app.run_polling()
 
