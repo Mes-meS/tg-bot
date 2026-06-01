@@ -8,8 +8,9 @@ ADMIN_ID = int(os.environ.get('ADMIN_ID'))
 
 # Ваши паки (оставляем как есть)
 PAKS = {
-    "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 350),
-    "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 100),
+    "pak1": ("marin(472)", "https://t.me/+_HeIkzWyoWAzZTgy", 250),
+    "pak2": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
+    "pak3": ("haruhi_suzumiya(111)", "https://t.me/+QgREEpJi0t1jZDVi", 50),
 }
 
 pending = {}
@@ -108,7 +109,7 @@ def main():
     app = Application.builder().token(TOKEN).build()
     
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(buy, pattern="^(pak1|pak2)$"))
+    app.add_handler(CallbackQueryHandler(buy, pattern="^(pak1|pak2|pak3)$"))
     app.add_handler(CallbackQueryHandler(paid, pattern="^paid$"))
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
