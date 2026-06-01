@@ -108,6 +108,7 @@ async def admin_deny(update: Update, context):
     )
     
     await query.edit_message_text(f"❌ ОТКАЗАНО пользователю {user_id}")
+    
 async def back_to_menu(update: Update, context):
     query = update.callback_query
     await query.answer()
@@ -131,7 +132,7 @@ def main():
     app.add_handler(MessageHandler(filters.PHOTO, handle_photo))
     app.add_handler(CallbackQueryHandler(admin_approve, pattern="^approve_"))
     app.add_handler(CallbackQueryHandler(admin_deny, pattern="^deny_"))
-    app.add_handler(CommandHandler("menu", menu))
+    app.add_handler(CallbackQueryHandler(back_to_menu, pattern="^back_to_menu$"))
     print("✅ Бот запущен!")
     app.run_polling()
 
