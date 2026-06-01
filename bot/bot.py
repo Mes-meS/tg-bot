@@ -90,11 +90,10 @@ async def admin_approve(update: Update, context):
     name, link, price = PAKS[pak_id]
     
     # Создаём кнопку "Вернуться в меню"
-    menu_keyboard = InlineKeyboardMarkup([[
-        InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")
-    ]])
-        InlineKeyboardButton("📦 Мои покупки", callback_data="my_purchases")
-    ]])
+    menu_keyboard = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🏠 Вернуться в меню", callback_data="back_to_menu")],
+        [InlineKeyboardButton("🛍️ Мои покупки", callback_data="my_purchases")]
+    ])
         # Сохраняем покупку
     if user_id not in user_purchases:
         user_purchases[user_id] = []
